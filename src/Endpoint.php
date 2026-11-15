@@ -67,17 +67,33 @@ final readonly class Endpoint
 
     /**
      * The caller's identity from the authentication middleware's attribute: a string as it is, or the named claim of
-     * a verified token (an object or array, as auth-jwks and auth-jwt set it). Anything else is no principal, and a
+     * a verified token (an object or array, as auth-jwks and auth-jwt set it), together with its issuer when it names
+     * one. Anything else is no principal, and a
      * request with no principal cannot use a session.
      */
     private static function principal(mixed $value, string $claim): ?string
     {
+        if (is_string($value)) {
+            return $value !== '' ? $value : null;
+        }
         if (is_object($value)) {
-            $value = $value->{$claim} ?? null;
-        } elseif (is_array($value)) {
-            $value = $value[$claim] ?? null;
+            $value = get_object_vars($value);
+        }
+        if (!is_array($value)) {
+            return null;
         }
 
-        return is_string($value) && $value !== '' ? $value : null;
+        $subject = $value[$claim] ?? null;
+        if (!is_string($subject) || $subject === '') {
+            return null;
+        }
+
+        // A subject is unique only within its issuer, so a token that names its issuer gives the pair. JSON keeps the
+        // two parts apart whatever characters they hold.
+        $issuer = $value['iss'] ?? null;
+
+        return is_string($issuer) && $issuer !== ''
+            ? json_encode([$issuer, $subject], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)
+            : $subject;
     }
 }
