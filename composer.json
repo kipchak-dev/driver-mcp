@@ -57,7 +57,13 @@
         "kipchak/driver-logger"
       ],
       "before": [],
-      "docs": "https://kipchak.dev/docs/driver-mcp"
+      "docs": "https://kipchak.dev/docs/driver-mcp",
+      "protocol-endpoints": [
+        "Kipchak\\Driver\\Mcp\\Endpoint"
+      ]
     }
+  },
+  "conflict": {
+    "kipchak/cli": "<1.6"
   }
 }
