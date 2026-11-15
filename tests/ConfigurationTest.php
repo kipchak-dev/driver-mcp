@@ -26,7 +26,6 @@ final class ConfigurationTest extends TestCase
     {
         yield 'unknown tool class' => [['tools' => ['App\\Mcp\\Missing']], "'tools' names the class App\\Mcp\\Missing, which does not exist"];
         yield 'class listed twice' => [['tools' => [StatusTools::class, StatusTools::class]], "'tools' lists a class more than once"];
-        yield 'nothing to offer' => [['tools' => []], "'tools' and 'discovery' are both empty"];
         yield 'empty hosts' => [['allowed_hosts' => []], "'allowed_hosts' is empty"];
         yield 'host with a port' => [['allowed_hosts' => ['api.example.test:8080']], "Give host names only"];
         yield 'host with a scheme' => [['allowed_hosts' => ['https://api.example.test']], "Give host names only"];
@@ -52,6 +51,28 @@ final class ConfigurationTest extends TestCase
             $this->assertStringContainsString("MCP server 'default' in kipchak.mcp", $e->getMessage());
             $this->assertStringContainsString($expected, $e->getMessage());
         }
+    }
+
+    public function testAServerThatOffersNothingBootsWithAWarning(): void
+    {
+        $container = $this->boot(['tools' => []]);
+
+        $this->assertTrue($container->has('drivers.mcp.default'), 'The sample configuration, copied by kipchak add, must boot');
+        $this->assertSame(["MCP server 'default' in kipchak.mcp lists no class in 'tools' and no directory in 'discovery', so it offers an assistant nothing."], $this->log->messages('warning'));
+    }
+
+    public function testTheSampleConfigurationBoots(): void
+    {
+        require_once __DIR__ . '/../vendor/kipchak/core/src/Functions.php';
+        $sample = require __DIR__ . '/../sample.config.php';
+        $container = new \DI\Container();
+        $container->set('drivers.logger', new Fake\RecordingLogger());
+        \Kipchak\Driver\Config\Config::initialise($container);
+        $container->set('drivers.config', ['kipchak.mcp' => $sample]);
+        Mcp::initialise($container);
+
+        $this->assertTrue($container->has('drivers.mcp.default'));
+        $this->assertSame(['localhost'], $sample['servers']['default']['allowed_hosts']);
     }
 
     public function testAValidConfigurationBoots(): void

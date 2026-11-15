@@ -74,10 +74,6 @@ final readonly class ServerSettings
             }
         }
 
-        if ($tools === [] && $discovery === []) {
-            throw ConfigurationException::for($server, 'tools', 'and \'discovery\' are both empty, so the server would offer nothing. List a class in \'tools\' or a directory in \'discovery\'.');
-        }
-
         $sessions = $config['sessions'] ?? null;
         if ($sessions !== null && (!is_string($sessions) || $sessions === '')) {
             throw ConfigurationException::for($server, 'sessions', 'must be null (no sessions) or the container key of a PSR-16 cache, such as \'drivers.cache.valkey.cache\'.');
@@ -134,6 +130,11 @@ final readonly class ServerSettings
             $principalAttribute,
             $maxBodyBytes,
         );
+    }
+
+    public function offersNothing(): bool
+    {
+        return $this->tools === [] && $this->discovery === [];
     }
 
     /**
