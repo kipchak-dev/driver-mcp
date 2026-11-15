@@ -22,6 +22,12 @@ final class ServerFactory
 {
     public static function build(ServerSettings $settings, ContainerInterface $container, LoggerInterface $logger): Server
     {
+        // Said when the server is built, on the first MCP request, not at boot: at boot the Kipchak logger writes to
+        // standard output, where the Kipchak CLI reads the project's JSON.
+        if ($settings->offersNothing()) {
+            $logger->warning("MCP server '{$settings->server}' in kipchak.mcp lists no class in 'tools' and no directory in 'discovery', so it offers an assistant nothing.");
+        }
+
         $builder = Server::builder()
             ->setServerInfo($settings->name, $settings->version)
             ->setInstructions($settings->instructions)

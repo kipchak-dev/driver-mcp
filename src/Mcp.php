@@ -55,9 +55,6 @@ class Mcp implements Interfaces\Driver
             }
             $settings = ServerSettings::fromConfig($name, $serverConfig, self::projectRoot());
             ServerFactory::checkTools($settings, self::logger(self::$container));
-            if ($settings->offersNothing()) {
-                self::logger(self::$container)->warning("MCP server '{$name}' in kipchak.mcp lists no class in 'tools' and no directory in 'discovery', so it offers an assistant nothing.");
-            }
             self::$settings[$name] = $settings;
 
             self::$container->set(

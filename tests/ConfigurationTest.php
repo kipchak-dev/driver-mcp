@@ -53,19 +53,26 @@ final class ConfigurationTest extends TestCase
         }
     }
 
-    public function testBootWritesNothingBelowWarning(): void
+    /**
+     * The Kipchak logger writes to standard output, and the Kipchak CLI reads a project's JSON from standard output
+     * while it boots the project. A valid configuration, and the sample one, must log nothing at boot.
+     */
+    public function testBootLogsNothing(): void
     {
         $this->boot();
+        $this->assertSame([], $this->log->records);
 
-        $levels = array_unique(array_map(static fn (array $r): string => $r['level'], $this->log->records));
-        $this->assertSame([], array_values(array_diff($levels, ['warning', 'error', 'critical', 'alert', 'emergency'])), 'The CLI reads standard output at boot');
+        $this->boot(['tools' => []]);
+        $this->assertSame([], $this->log->records, 'Not even the warning about a server that offers nothing');
     }
 
-    public function testAServerThatOffersNothingBootsWithAWarning(): void
+    public function testAServerThatOffersNothingBootsAndWarnsWhenBuilt(): void
     {
         $container = $this->boot(['tools' => []]);
-
         $this->assertTrue($container->has('drivers.mcp.default'), 'The sample configuration, copied by kipchak add, must boot');
+
+        Mcp::get();
+
         $this->assertSame(["MCP server 'default' in kipchak.mcp lists no class in 'tools' and no directory in 'discovery', so it offers an assistant nothing."], $this->log->messages('warning'));
     }
 
