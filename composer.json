@@ -1,0 +1,63 @@
+{
+  "name": "kipchak/driver-mcp",
+  "type": "library",
+  "description": "A Model Context Protocol (MCP) driver for the Kipchak API Development Kit (ADK): serve MCP tools, resources and prompts from a Kipchak API, built on the official mcp/sdk",
+  "keywords": [
+    "APIs",
+    "MCP",
+    "Model Context Protocol",
+    "AI",
+    "Tools",
+    "Microservices",
+    "Mamluk"
+  ],
+  "homepage": "https://mamluk.net",
+  "license": "MIT",
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "Kipchak\\Driver\\Mcp\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Kipchak\\Driver\\Mcp\\Tests\\": "tests/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=8.4",
+    "kipchak/core": "^3.21",
+    "kipchak/driver-config": "^1.35",
+    "kipchak/driver-logger": "^1.40",
+    "mcp/sdk": "0.10.0",
+    "psr/container": "^2",
+    "psr/log": "^2 || ^3",
+    "psr/simple-cache": "^2 || ^3",
+    "slim/psr7": "^1.8",
+    "symfony/finder": "^7.3 || ^8.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^12"
+  },
+  "extra": {
+    "kipchak": {
+      "type": "driver",
+      "config": "sample.config.php",
+      "configName": "kipchak.mcp.php",
+      "initialise": "\\Kipchak\\Driver\\Mcp\\Mcp::initialise($container);",
+      "after": [
+        "kipchak/driver-config",
+        "kipchak/driver-logger"
+      ],
+      "before": [],
+      "docs": "https://kipchak.dev/docs/driver-mcp"
+    }
+  }
+}
