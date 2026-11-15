@@ -124,6 +124,25 @@ final class EndpointTest extends TestCase
         $this->assertSame(404, $endpoint(self::request($call, $headers)->withAttribute('kipchak.auth.token', $token(null)))->getStatusCode(), 'A token without the claim is no principal');
     }
 
+    /** A8: a subject is unique only within its issuer, so the same sub from two issuers is two principals. */
+    public function testTheSameSubjectFromAnotherIssuerIsAnotherPrincipal(): void
+    {
+        $container = new Container();
+        $container->set('test.cache', new ArrayCache());
+        $this->boot(['sessions' => 'test.cache', 'principal_attribute' => 'kipchak.auth.token', 'tools' => [PrincipalTools::class]], $container);
+        $endpoint = Mcp::endpoint();
+        $fromA = (object) ['sub' => 'alice', 'iss' => 'https://idp-a.example.test/realms/a'];
+        $fromB = (object) ['sub' => 'alice', 'iss' => 'https://idp-b.example.test/realms/b'];
+
+        $session = $endpoint(self::request(self::initialize())->withAttribute('kipchak.auth.token', $fromA))->getHeaderLine('Mcp-Session-Id');
+        $call = ['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/call', 'params' => ['name' => 'whoami', 'arguments' => new \stdClass()]];
+        $headers = ['MCP-Protocol-Version' => '2025-11-25', 'Mcp-Session-Id' => $session];
+
+        $this->assertSame(200, $endpoint(self::request($call, $headers)->withAttribute('kipchak.auth.token', $fromA))->getStatusCode());
+        $this->assertSame(404, $endpoint(self::request($call, $headers)->withAttribute('kipchak.auth.token', $fromB))->getStatusCode());
+        $this->assertSame(404, $endpoint(self::request($call, $headers)->withAttribute('kipchak.auth.token', 'alice'))->getStatusCode(), 'A plain string alice is not the token alice of issuer A');
+    }
+
     /** The principal comes only from the configured attribute; a value placed in the SDK's own attribute is dropped. */
     public function testOnlyTheConfiguredAttributeDecidesThePrincipal(): void
     {
