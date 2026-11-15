@@ -7,6 +7,7 @@ namespace Kipchak\Driver\Mcp\Tests\Fake;
 use DI\Container;
 use Kipchak\Driver\Config\Config;
 use Kipchak\Driver\Mcp\Mcp;
+use Kipchak\Driver\Mcp\Tests\Fixtures\Clock;
 use Kipchak\Driver\Mcp\Tests\Fixtures\StatusTools;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -25,6 +26,7 @@ trait BootsDriver
         $container ??= new Container();
         $this->log = new RecordingLogger();
         $container->set('drivers.logger', $this->log);
+        $container->set(Clock::class, new Clock('2026-11-15T00:00:00Z'));
         Config::initialise($container);
         $container->set('drivers.config', ['kipchak.mcp' => ['servers' => ['default' => array_replace(self::baseServer(), $overrides)]]]);
         Mcp::initialise($container);

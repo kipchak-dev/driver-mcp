@@ -4,10 +4,17 @@ declare(strict_types=1);
 
 namespace Kipchak\Driver\Mcp\Tests\Fixtures;
 
-final class Clock
+/**
+ * Needs a value no autowiring can supply, so a tool that receives one proves it came from the Kipchak container.
+ */
+final readonly class Clock
 {
+    public function __construct(private string $now)
+    {
+    }
+
     public function now(): string
     {
-        return '2026-11-15T00:00:00Z';
+        return $this->now;
     }
 }

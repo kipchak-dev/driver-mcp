@@ -74,7 +74,7 @@ final class ConfigurationTest extends TestCase
     public function testASessionKeyThatIsNotAPsr16CacheStopsTheBuild(): void
     {
         $container = new \DI\Container();
-        $container->set('test.cache', new Clock());
+        $container->set('test.cache', new Clock('not a cache'));
         $this->boot(['sessions' => 'test.cache', 'principal_attribute' => 'auth.subject'], $container);
 
         $this->expectException(ConfigurationException::class);
