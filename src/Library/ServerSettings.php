@@ -34,6 +34,9 @@ final readonly class ServerSettings
         public ?string $principalAttribute,
         public string $principalClaim,
         public int $maxBodyBytes,
+        /** @var list<string> */
+        public array $requestStateKeys = [],
+        public int $requestStateTtl = 600,
     ) {
     }
 
@@ -121,6 +124,26 @@ final readonly class ServerSettings
             throw ConfigurationException::for($server, 'max_body_bytes', 'must be a whole number of bytes, at least 1024.');
         }
 
+        // The keys that sign the state a 2026-07-28 tool hands back when it asks the user for input. A key is never
+        // shown in a message, only its position and length.
+        $requestState = $config['request_state'] ?? [];
+        if (!is_array($requestState)) {
+            throw ConfigurationException::for($server, 'request_state', 'must be an array with \'keys\' and \'ttl\'.');
+        }
+        $requestStateKeys = $requestState['keys'] ?? [];
+        if (!is_array($requestStateKeys) || !array_is_list($requestStateKeys)) {
+            throw ConfigurationException::for($server, 'request_state.keys', 'must be a list of keys.');
+        }
+        foreach ($requestStateKeys as $position => $key) {
+            if (!is_string($key) || strlen($key) < 32) {
+                throw ConfigurationException::for($server, 'request_state.keys', 'has key ' . ($position + 1) . ' of ' . (is_string($key) ? strlen($key) . ' bytes' : get_debug_type($key)) . '; each key must be a string of at least 32 bytes.');
+            }
+        }
+        $requestStateTtl = $requestState['ttl'] ?? 600;
+        if (!is_int($requestStateTtl) || $requestStateTtl < 1) {
+            throw ConfigurationException::for($server, 'request_state.ttl', 'must be a whole number of seconds, at least 1.');
+        }
+
         return new self(
             $server,
             $name,
@@ -136,6 +159,8 @@ final readonly class ServerSettings
             $principalAttribute,
             $principalClaim,
             $maxBodyBytes,
+            $requestStateKeys,
+            $requestStateTtl,
         );
     }
 

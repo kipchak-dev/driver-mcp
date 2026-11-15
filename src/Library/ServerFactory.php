@@ -8,6 +8,7 @@ use Kipchak\Driver\Mcp\Exception\ConfigurationException;
 use Mcp\Server\Capability\Discovery\Discoverer;
 use Mcp\Server\Capability\Registry;
 use Mcp\Server\Server;
+use Mcp\Server\Stateless\OriginatingRequestBinder;
 use Mcp\Server\Session\Psr16SessionStore;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -44,6 +45,11 @@ final class ServerFactory
 
         if ($settings->discovery !== []) {
             $builder->setDiscovery($settings->basePath, $settings->discovery);
+        }
+
+        if ($settings->requestStateKeys !== []) {
+            // Binds each state to the request it was issued for: its method, tool or prompt, and arguments.
+            $builder->setRequestState($settings->requestStateKeys, $settings->requestStateTtl, new OriginatingRequestBinder());
         }
 
         if ($settings->sessions !== null) {

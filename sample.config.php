@@ -54,6 +54,15 @@ return [
 
             // The largest request body accepted, in bytes. Larger bodies are refused with 413.
             'max_body_bytes' => 4194304,
+
+            // On protocol 2026-07-28, a tool that asks the user for input (an elicitation) hands the client a signed state
+            // and reads it back on the next call. Without a key, such a tool cannot ask. Give one or more keys of at
+            // least 32 bytes, comma-separated in MCP_REQUEST_STATE_KEYS: the first signs, every key verifies, so a key
+            // can be rotated across replicas. Every replica needs the same keys. Treat them as secrets.
+            'request_state' => [
+                'keys' => array_values(array_filter(explode(',', env('MCP_REQUEST_STATE_KEYS', '')))),
+                'ttl' => 600,
+            ],
         ],
     ],
 ];
