@@ -32,7 +32,8 @@ final class ServerFactory
             ->setServerInfo($settings->name, $settings->version)
             ->setInstructions($settings->instructions)
             ->setContainer($container)
-            ->setLogger($logger)
+            // The SDK logs several info lines for every request; only its warnings and worse reach the API log.
+            ->setLogger(new WarningsOnly($logger))
             // Load the tools when the server is built, once per worker, rather than on the first registry read in
             // the middle of a request.
             ->setLazyLoading(false);

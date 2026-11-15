@@ -40,6 +40,17 @@ final class EndpointTest extends TestCase
         $this->assertStringContainsString('2026-11-15T00:00:00Z', $result['result']['content'][0]['text']);
     }
 
+    /** A request writes nothing below warning to the API log: the SDK logs several info lines per request. */
+    public function testARequestLogsNothingBelowWarning(): void
+    {
+        $this->boot();
+        $endpoint = Mcp::endpoint();
+        $endpoint(self::request(self::initialize()));
+        $endpoint(self::request(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/call', 'params' => ['name' => 'add', 'arguments' => ['a' => 1, 'b' => 2]]], ['MCP-Protocol-Version' => '2025-11-25']));
+
+        $this->assertSame([], $this->log->records);
+    }
+
     /** T3: the handshake era, without sessions. */
     public function testHandshakeEraWithoutSessions(): void
     {

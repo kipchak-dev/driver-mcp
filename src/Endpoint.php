@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kipchak\Driver\Mcp;
 
 use Kipchak\Driver\Mcp\Library\RefusalLogging;
+use Kipchak\Driver\Mcp\Library\WarningsOnly;
 use Kipchak\Driver\Mcp\Library\ServerSettings;
 use Mcp\Server\Server;
 use Mcp\Server\Transport\Http\Middleware\CorsMiddleware;
@@ -53,7 +54,7 @@ final readonly class Endpoint
             $request,
             $this->responseFactory,
             $this->streamFactory,
-            $this->logger,
+            new WarningsOnly($this->logger),
             [
                 new RefusalLogging($this->settings->server, $this->logger),
                 new CorsMiddleware($this->settings->allowedOrigins),
