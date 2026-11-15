@@ -16,6 +16,13 @@ use Mcp\Server\RequestContext;
 /** A tool that asks the user for input before it answers, as the 2026-07-28 era does it. */
 final class AskingTools
 {
+    /** What the SDK tells a tool about its caller: the claims of the access token the driver built. */
+    #[McpTool(name: 'claims')]
+    public function claims(RequestContext $context): string
+    {
+        return json_encode($context->getAccessToken()?->getClaims(), JSON_THROW_ON_ERROR);
+    }
+
     #[McpTool(name: 'greet')]
     public function greet(RequestContext $context): CallToolResult|InputRequiredResult
     {

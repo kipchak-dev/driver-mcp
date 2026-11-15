@@ -7,6 +7,7 @@ namespace Kipchak\Driver\Mcp;
 use Kipchak\Driver\Mcp\Library\RefusalLogging;
 use Kipchak\Driver\Mcp\Library\WarningsOnly;
 use Kipchak\Driver\Mcp\Library\ServerSettings;
+use Mcp\Server\Authorization\AccessToken;
 use Mcp\Server\Server;
 use Mcp\Server\Transport\Http\Middleware\CorsMiddleware;
 use Mcp\Server\Transport\Http\Middleware\DnsRebindingProtectionMiddleware;
@@ -39,14 +40,22 @@ final readonly class Endpoint
 
     public function __invoke(ServerRequestInterface $request, ?ResponseInterface $response = null, array $args = []): ResponseInterface
     {
+        // Only the authentication middleware's attribute decides who the caller is. Anything a caller managed to put
+        // in the SDK's own attributes is removed first.
+        $request = $request
+            ->withoutAttribute(StreamableHttpTransport::PRINCIPAL_ATTRIBUTE)
+            ->withoutAttribute(AccessToken::class);
+
         $principalAttribute = $this->settings->principalAttribute;
-        // Only the authentication middleware's attribute decides the principal. Anything a caller managed to put in
-        // the SDK's own attribute is removed first.
-        $request = $request->withoutAttribute(StreamableHttpTransport::PRINCIPAL_ATTRIBUTE);
         if ($principalAttribute !== null) {
-            $principal = self::principal($request->getAttribute($principalAttribute), $this->settings->principalClaim);
-            if ($principal !== null) {
-                $request = $request->withAttribute(StreamableHttpTransport::PRINCIPAL_ATTRIBUTE, $principal);
+            $identity = self::identity($request->getAttribute($principalAttribute), $this->settings->principalClaim);
+            if ($identity !== null) {
+                // The principal binds a session to its caller. The access token, built from the caller's issuer,
+                // client and subject only, binds each signed request state to its caller as well: the SDK's
+                // OriginatingRequestBinder reads it. No other claim of the original token is passed on.
+                $request = $request
+                    ->withAttribute(StreamableHttpTransport::PRINCIPAL_ATTRIBUTE, $identity['principal'])
+                    ->withAttribute(AccessToken::class, new AccessToken([], $identity['claims']));
             }
         }
 
@@ -68,14 +77,15 @@ final readonly class Endpoint
 
     /**
      * The caller's identity from the authentication middleware's attribute: a string as it is, or the named claim of
-     * a verified token (an object or array, as auth-jwks and auth-jwt set it), together with its issuer when it names
-     * one. Anything else is no principal, and a
-     * request with no principal cannot use a session.
+     * a verified token (an object or array, as auth-jwks and auth-jwt set it), together with its issuer and client
+     * when it names them. Anything else is no identity, and a request with no identity cannot use a session.
+     *
+     * @return array{principal: string, claims: array<string, string>}|null
      */
-    private static function principal(mixed $value, string $claim): ?string
+    private static function identity(mixed $value, string $claim): ?array
     {
         if (is_string($value)) {
-            return $value !== '' ? $value : null;
+            return $value !== '' ? ['principal' => $value, 'claims' => ['sub' => $value]] : null;
         }
         if (is_object($value)) {
             $value = get_object_vars($value);
@@ -89,12 +99,22 @@ final readonly class Endpoint
             return null;
         }
 
+        $claims = ['sub' => $subject];
+        $issuer = $value['iss'] ?? null;
+        if (is_string($issuer) && $issuer !== '') {
+            $claims['iss'] = $issuer;
+        }
+        $client = $value['client_id'] ?? $value['azp'] ?? null;
+        if (is_string($client) && $client !== '') {
+            $claims['client_id'] = $client;
+        }
+
         // A subject is unique only within its issuer, so a token that names its issuer gives the pair. JSON keeps the
         // two parts apart whatever characters they hold.
-        $issuer = $value['iss'] ?? null;
-
-        return is_string($issuer) && $issuer !== ''
-            ? json_encode([$issuer, $subject], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)
+        $principal = isset($claims['iss'])
+            ? json_encode([$claims['iss'], $subject], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)
             : $subject;
+
+        return ['principal' => $principal, 'claims' => $claims];
     }
 }
