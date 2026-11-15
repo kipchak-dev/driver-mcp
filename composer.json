@@ -44,6 +44,8 @@
     "symfony/finder": "^7.3 || ^8.0"
   },
   "require-dev": {
+    "kipchak/driver-filecache": "^1.35",
+    "kipchak/middleware-auth-jwks": "^1.44",
     "phpunit/phpunit": "^12"
   },
   "extra": {
