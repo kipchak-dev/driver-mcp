@@ -105,6 +105,25 @@ final class EndpointTest extends TestCase
         $this->assertSame(404, $anonymous->getStatusCode(), 'A request with no principal must not reach the session');
     }
 
+    /** A verified token, as auth-jwks and auth-jwt set it, gives its subject claim as the principal. */
+    public function testAVerifiedTokenGivesItsSubjectAsThePrincipal(): void
+    {
+        $container = new Container();
+        $container->set('test.cache', new ArrayCache());
+        $this->boot(['sessions' => 'test.cache', 'principal_attribute' => 'kipchak.auth.token', 'tools' => [PrincipalTools::class]], $container);
+        $endpoint = Mcp::endpoint();
+        $token = static fn (?string $sub): object => (object) array_filter(['sub' => $sub, 'iss' => 'https://idp.example.test/realms/test']);
+
+        $session = $endpoint(self::request(self::initialize())->withAttribute('kipchak.auth.token', $token('alice')))->getHeaderLine('Mcp-Session-Id');
+        $this->assertNotSame('', $session);
+        $call = ['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/call', 'params' => ['name' => 'whoami', 'arguments' => new \stdClass()]];
+        $headers = ['MCP-Protocol-Version' => '2025-11-25', 'Mcp-Session-Id' => $session];
+
+        $this->assertSame(200, $endpoint(self::request($call, $headers)->withAttribute('kipchak.auth.token', $token('alice')))->getStatusCode());
+        $this->assertSame(404, $endpoint(self::request($call, $headers)->withAttribute('kipchak.auth.token', $token('bob')))->getStatusCode());
+        $this->assertSame(404, $endpoint(self::request($call, $headers)->withAttribute('kipchak.auth.token', $token(null)))->getStatusCode(), 'A token without the claim is no principal');
+    }
+
     /** The principal comes only from the configured attribute; a value placed in the SDK's own attribute is dropped. */
     public function testOnlyTheConfiguredAttributeDecidesThePrincipal(): void
     {

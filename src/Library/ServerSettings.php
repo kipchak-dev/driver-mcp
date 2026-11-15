@@ -32,6 +32,7 @@ final readonly class ServerSettings
         public array $allowedHosts,
         public array $allowedOrigins,
         public ?string $principalAttribute,
+        public string $principalClaim,
         public int $maxBodyBytes,
     ) {
     }
@@ -104,6 +105,11 @@ final readonly class ServerSettings
             throw ConfigurationException::for($server, 'principal_attribute', 'is the SDK\'s own attribute. Name the attribute your authentication middleware sets.');
         }
 
+        $principalClaim = $config['principal_claim'] ?? 'sub';
+        if (!is_string($principalClaim) || $principalClaim === '') {
+            throw ConfigurationException::for($server, 'principal_claim', 'must name the claim that identifies the caller, such as "sub".');
+        }
+
         // A session the SDK cannot bind to a caller can be used by anyone who learns its id. With sessions on, the
         // principal must come from the authentication middleware in front of the route.
         if ($sessions !== null && $principalAttribute === null) {
@@ -128,6 +134,7 @@ final readonly class ServerSettings
             $allowedHosts,
             $allowedOrigins,
             $principalAttribute,
+            $principalClaim,
             $maxBodyBytes,
         );
     }

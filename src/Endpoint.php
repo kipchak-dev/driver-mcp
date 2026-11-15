@@ -43,8 +43,8 @@ final readonly class Endpoint
         // the SDK's own attribute is removed first.
         $request = $request->withoutAttribute(StreamableHttpTransport::PRINCIPAL_ATTRIBUTE);
         if ($principalAttribute !== null) {
-            $principal = $request->getAttribute($principalAttribute);
-            if (is_string($principal) && $principal !== '') {
+            $principal = self::principal($request->getAttribute($principalAttribute), $this->settings->principalClaim);
+            if ($principal !== null) {
                 $request = $request->withAttribute(StreamableHttpTransport::PRINCIPAL_ATTRIBUTE, $principal);
             }
         }
@@ -63,5 +63,21 @@ final readonly class Endpoint
         );
 
         return ($this->server)()->run($transport);
+    }
+
+    /**
+     * The caller's identity from the authentication middleware's attribute: a string as it is, or the named claim of
+     * a verified token (an object or array, as auth-jwks and auth-jwt set it). Anything else is no principal, and a
+     * request with no principal cannot use a session.
+     */
+    private static function principal(mixed $value, string $claim): ?string
+    {
+        if (is_object($value)) {
+            $value = $value->{$claim} ?? null;
+        } elseif (is_array($value)) {
+            $value = $value[$claim] ?? null;
+        }
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 }

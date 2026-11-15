@@ -48,6 +48,10 @@ return [
             // bound to it, so one caller cannot use another's session. Required when 'sessions' is set.
             'principal_attribute' => null,
 
+            // When that attribute is a verified token (kipchak/middleware-auth-jwks and auth-jwt set an object of claims),
+            // the claim that identifies the caller.
+            'principal_claim' => 'sub',
+
             // The largest request body accepted, in bytes. Larger bodies are refused with 413.
             'max_body_bytes' => 4194304,
         ],
