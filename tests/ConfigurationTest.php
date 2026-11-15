@@ -53,6 +53,14 @@ final class ConfigurationTest extends TestCase
         }
     }
 
+    public function testBootWritesNothingBelowWarning(): void
+    {
+        $this->boot();
+
+        $levels = array_unique(array_map(static fn (array $r): string => $r['level'], $this->log->records));
+        $this->assertSame([], array_values(array_diff($levels, ['warning', 'error', 'critical', 'alert', 'emergency'])), 'The CLI reads standard output at boot');
+    }
+
     public function testAServerThatOffersNothingBootsWithAWarning(): void
     {
         $container = $this->boot(['tools' => []]);

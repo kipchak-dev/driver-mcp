@@ -32,7 +32,7 @@ final class ServerFactory
             ->setLazyLoading(false);
 
         if ($settings->tools !== []) {
-            $builder->addLoader(new ClassLoader($settings->server, $settings->tools, new Discoverer($logger)));
+            $builder->addLoader(new ClassLoader($settings->server, $settings->tools, new Discoverer(new WarningsOnly($logger))));
         }
 
         if ($settings->discovery !== []) {
@@ -63,6 +63,6 @@ final class ServerFactory
             return;
         }
 
-        (new ClassLoader($settings->server, $settings->tools, new Discoverer($logger)))->load(new Registry(logger: $logger));
+        (new ClassLoader($settings->server, $settings->tools, new Discoverer(new WarningsOnly($logger))))->load(new Registry(logger: new WarningsOnly($logger)));
     }
 }
