@@ -93,6 +93,20 @@ The endpoint refuses, with 403, any request whose `Host` is not in `'allowed_hos
 private network from DNS rebinding. Set `MCP_HOST` to the host name clients use when you deploy. A refused request
 is logged as a warning that names the host received.
 
+## Tool dispatcher
+
+An API whose tools read customer data needs one place that decides who may call each tool. Name a class implementing
+`Kipchak\Driver\Mcp\ToolDispatcher` in `tool_dispatcher`. The Kipchak container builds it.
+
+- `accept(ToolDefinition $tool)` is called for every tool when the API starts, including tools found by discovery. It
+  reads the attributes on `$tool->function` and throws to refuse a tool, which stops the API.
+- `dispatch(ToolCall $call, \Closure $next)` runs every tool call. `$call->caller` is the caller's issuer, client and
+  subject, or `null` for an anonymous call. Call `$next()` to run the tool, or `$next($grant)` to hand it what you
+  authorised, which the tool reads with `Grant::from($context)` from a `RequestContext` parameter. Throw an
+  `Mcp\Server\Exception\ToolCallException` to refuse with a message. Any other exception closes the call with no data.
+
+Resources and prompts do not pass through the dispatcher.
+
 ## The SDK version
 
 The driver requires `mcp/sdk` at exactly `0.10.0`. The SDK is before version 1.0, and each of its minor releases from 0.5

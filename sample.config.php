@@ -52,6 +52,11 @@ return [
             // the claim that identifies the caller.
             'principal_claim' => 'sub',
 
+            // A class implementing Kipchak\Driver\Mcp\ToolDispatcher, which decides every tool call in one place: it
+            // is shown each tool at boot and can refuse it, which stops the API, and it runs or refuses each call.
+            // null runs every tool directly.
+            'tool_dispatcher' => null,
+
             // The largest request body accepted, in bytes. Larger bodies are refused with 413.
             'max_body_bytes' => 4194304,
 

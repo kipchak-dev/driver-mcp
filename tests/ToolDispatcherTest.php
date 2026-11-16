@@ -273,6 +273,24 @@ final class ToolDispatcherTest extends TestCase
         $this->assertSame([], $dispatcher->call?->arguments);
     }
 
+    /** The dispatcher the documentation shows, examples/tool-dispatcher.php, works as the page says. */
+    public function testTheDocumentedExampleWorks(): void
+    {
+        require_once __DIR__ . '/../examples/tool-dispatcher.php';
+        $this->boot([
+            'tools' => [\Kipchak\Driver\Mcp\Tests\Fixtures\ExampleDispatcherTools::class],
+            'tool_dispatcher' => \Api\Mcp\Dispatcher::class,
+            'principal_attribute' => 'auth.token',
+        ]);
+
+        $this->assertSame('hello', $this->call('hello')['result']['content'][0]['text']);
+        $this->assertSame('Sign in to use this tool.', $this->call('my_account')['result']['content'][0]['text']);
+        $this->assertSame('account of user-1', $this->call('my_account', [], self::token())['result']['content'][0]['text']);
+
+        $this->expectExceptionMessage("MCP tool 'ungoverned' declares neither #[SignIn] nor #[Anyone].");
+        $this->boot(['tools' => [UngovernedTools::class], 'tool_dispatcher' => \Api\Mcp\Dispatcher::class]);
+    }
+
     public function testWithoutADispatcherEveryToolRunsAsBefore(): void
     {
         $this->boot(['tools' => [StatusTools::class]]);
