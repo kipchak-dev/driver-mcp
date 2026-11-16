@@ -54,7 +54,7 @@ class Mcp implements Interfaces\Driver
                 throw ConfigurationException::for($name, 'servers', 'must map the server name to an array of settings.');
             }
             $settings = ServerSettings::fromConfig($name, $serverConfig, self::projectRoot());
-            ServerFactory::checkTools($settings, self::logger(self::$container));
+            ServerFactory::checkTools($settings, self::logger(self::$container), self::$container);
             self::$settings[$name] = $settings;
 
             self::$container->set(

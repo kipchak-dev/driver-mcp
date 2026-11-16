@@ -37,6 +37,8 @@ final readonly class ServerSettings
         /** @var list<string> */
         public array $requestStateKeys = [],
         public int $requestStateTtl = 600,
+        /** @var class-string<\Kipchak\Driver\Mcp\ToolDispatcher>|null */
+        public ?string $toolDispatcher = null,
     ) {
     }
 
@@ -144,6 +146,16 @@ final readonly class ServerSettings
             throw ConfigurationException::for($server, 'request_state.ttl', 'must be a whole number of seconds, at least 1.');
         }
 
+        $toolDispatcher = $config['tool_dispatcher'] ?? null;
+        if ($toolDispatcher !== null) {
+            if (!is_string($toolDispatcher) || !class_exists($toolDispatcher)) {
+                throw ConfigurationException::for($server, 'tool_dispatcher', 'must be null or the name of a class that implements ' . \Kipchak\Driver\Mcp\ToolDispatcher::class . '.');
+            }
+            if (!is_subclass_of($toolDispatcher, \Kipchak\Driver\Mcp\ToolDispatcher::class)) {
+                throw ConfigurationException::for($server, 'tool_dispatcher', "names {$toolDispatcher}, which does not implement " . \Kipchak\Driver\Mcp\ToolDispatcher::class . '.');
+            }
+        }
+
         return new self(
             $server,
             $name,
@@ -161,6 +173,7 @@ final readonly class ServerSettings
             $maxBodyBytes,
             $requestStateKeys,
             $requestStateTtl,
+            $toolDispatcher,
         );
     }
 
